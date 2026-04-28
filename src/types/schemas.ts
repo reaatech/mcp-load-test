@@ -15,7 +15,7 @@ export const authOptionsSchema = z.object({
 
 export const patternStepSchema = z.object({
   tool: z.string(),
-  args: z.record(z.unknown()).default({}),
+  args: z.record(z.string(), z.unknown()).default({}),
 });
 
 export const toolCallPatternSchema = z.object({
