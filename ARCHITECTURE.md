@@ -4,15 +4,15 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                           Client Layer                                │
+│                         Client Layer                                  │
 │  ┌─────────────┐    ┌─────────────┐                                  │
-│  │     CLI     │    │   Library   │                                  │
-│  │  (mcp-lt)   │    │   API       │                                  │
+│  │     CLI     │    │  Library    │                                  │
+│  │  (mcp-lt)   │    │    API      │                                  │
 │  └──────┬──────┘    └──────┬──────┘                                  │
 └─────────┼──────────────────┼──────────────────────────────────────────┘
           │                  │
 ┌─────────▼──────────────────▼──────────────────────────────────────────┐
-│                        Load Test Engine                                 │
+│                     Orchestration Layer                                │
 │  ┌────────────────────────────────────────────────────────────────┐   │
 │  │                     LoadEngine                                   │   │
 │  │   1. Parse config    2. Create sessions    3. Execute profile   │   │
@@ -22,25 +22,25 @@
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                   │
 │  │   Session    │ │    Load      │ │    Tool      │                   │
 │  │   Manager    │ │   Profile    │ │   Pattern    │                   │
-│  │              │ │   Executor   │ │   Executor   │                   │
+│  │              │ │   Generators │ │   Executor   │                   │
 │  └──────────────┘ └──────────────┘ └──────────────┘                   │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
 ┌───────────────────────────────▼──────────────────────────────────────┐
-│                         Metrics Layer                                 │
+│                       Analysis Layer                                   │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                  │
 │  │   Latency    │ │    Error     │ │  Throughput  │                  │
 │  │  Histogram   │ │   Tracker    │ │  Collector   │                  │
 │  └──────────────┘ └──────────────┘ └──────────────┘                  │
 │  ┌──────────────┐ ┌──────────────┐                                   │
-│  │  Breaking    │ │   Resource   │                                   │
-│  │   Point      │ │   Monitor    │                                   │
+│  │  Breaking    │ │   Grading    │                                   │
+│  │   Point      │ │   System     │                                   │
 │  │  Detector    │ │              │                                   │
 │  └──────────────┘ └──────────────┘                                   │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
 ┌───────────────────────────────▼──────────────────────────────────────┐
-│                         MCP Client                                    │
+│                         MCP Client Layer                               │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐       │
 │  │ StreamableHTTP  │  │      SSE        │  │     stdio       │       │
 │  │   Transport     │  │   Transport     │  │   Transport     │       │
@@ -56,9 +56,50 @@
 │                          Reporters                                    │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                   │
 │  │   Console   │  │  Markdown   │  │    JSON     │                   │
-│  │  (realtime) │  │  (PR-ready) │  │  (machine)  │                   │
+│  │  (ANSI)     │  │  (PR-ready) │  │  (machine)  │                   │
 │  └─────────────┘  └─────────────┘  └─────────────┘                   │
 └──────────────────────────────────────────────────────────────────────┘
+```
+
+## Monorepo Structure
+
+```
+mcp-load-test/
+├── packages/
+│   ├── core/          @reaatech/mcp-load-test-core       Types, schemas, utils, logger
+│   ├── metrics/       @reaatech/mcp-load-test-metrics    Latency histograms, error tracking
+│   ├── patterns/      @reaatech/mcp-load-test-patterns   Tool call patterns, executor
+│   ├── profiles/      @reaatech/mcp-load-test-profiles   Concurrency profile generators
+│   ├── analysis/      @reaatech/mcp-load-test-analysis   Breaking point detection, grading
+│   ├── client/        @reaatech/mcp-load-test-client     MCP transports (stdio, SSE, HTTP)
+│   ├── reporters/     @reaatech/mcp-load-test-reporters  Console, markdown, JSON output
+│   ├── engine/        @reaatech/mcp-load-test-engine     Orchestrator, session manager
+│   └── cli/           @reaatech/mcp-load-test-cli        Commander CLI, binary entry
+├── .changeset/        Changesets versioning config
+├── .github/workflows/ CI + release pipelines
+├── pnpm-workspace.yaml
+├── turbo.json         Task orchestration
+├── biome.json         Lint + format config
+└── tsconfig.json      Shared TS base
+```
+
+### Dependency Graph
+
+```
+core ─────────────┬──► metrics ──────┬──► patterns ───┐
+                  │                  │                │
+                  ├──► profiles ─────┤                │
+                  │                  │                │
+                  ├──► analysis ─────┘                │
+                  │                                   │
+                  ├──► client ────────────────────────┤
+                  │                                   │
+                  ├──► reporters ─────────────────────┤
+                  │                                   │
+                  └──► engine ◄───────────────────────┘
+                        │
+                        ▼
+                      cli
 ```
 
 ## Design Principles
@@ -70,19 +111,33 @@
 5. **Actionable Reports** — Clear identification of breaking points with remediation
 6. **CI/CD Friendly** — Machine-readable output, exit codes, baseline comparison
 
-## Component Deep Dive
+## Package Deep Dive
 
-### MCP Client (`src/mcp-client/`)
+### Core (`packages/core`)
 
-Session-scoped MCP client adapted from `mcp-server-doctor` for load-test semantics:
+The foundation package. Everything depends on it.
 
-- **Session-scoped** — Each session gets its own client instance; no shared state between sessions
-- **Lazy initialization** — `initialize` is called on connect; `tools/list` is deferred to the pattern executor (not eagerly cached)
-- **Concurrent-safe** — Each transport instance handles one session's requests; concurrency comes from multiple session instances, not in-flight requests per transport
-- **Reconnect on failure** — Transport failures trigger session re-creation, not global test abort
+**Exports:**
+- **Types** (`types/domain.ts`) — `LoadTestReport`, `LoadProfile`, `ToolCallPattern`, `SessionState`, `MCPClient`, `AuthOptions`, `LoadEngineOptions`, transport/profile/pattern types, and all metric interfaces
+- **Schemas** (`types/schemas.ts`) — Zod schemas for runtime validation of all configuration shapes
+- **Utilities** (`utils/index.ts`) — `generateUUID`, `calculateStats`, `percentile`, `retryWithBackoff`, `sleep`, `measureTimeAsync`, `isValidURL`, `isPrivateURL`
+- **Logger** (`observability/logger.ts`) — Pre-configured Pino instance (level controlled by `LOG_LEVEL`, pretty-printing via `MCP_LT_PRETTY_LOGS`)
+- **Version** (`version.ts`) — `getProgramVersion()` reads from `package.json`
+
+### Client (`packages/client`)
+
+Session-scoped MCP transport clients with auto-negotiation.
+
+- **`createSessionClient(endpoint, options)`** — Factory returning an `MCPClient`-conforming instance
+- **`StreamableHTTPTransport`** — HTTP POST with `mcp-session-id` header tracking, OPTIONS preflight, DELETE on disconnect
+- **`SSETransport`** — Server-Sent Events for responses, `fetch POST` for requests, endpoint event handling
+- **`StdioTransport`** — Spawns child process, JSON-RPC over stdin/stdout with newline-delimited messages
+- **Auth support** — API key (`X-Api-Key`), Bearer token, OAuth client credentials (headers for HTTP/SSE, env vars for stdio)
+- **Auto-fallback** — When `transport: "auto"`, tries StreamableHTTP first; falls back to SSE on connect failure
+- **Private endpoint warnings** — Logs when connecting to RFC 1918 / loopback addresses (once per endpoint)
 
 ```typescript
-interface SessionMCPClient {
+interface MCPClient {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   sendRequest(method: string, params?: unknown): Promise<unknown>;
@@ -91,18 +146,24 @@ interface SessionMCPClient {
 }
 ```
 
-> **Note on "copy/adapt" from doctor**: `mcp-server-doctor`'s `DoctorMCPClient` is optimized for single-session diagnostics (eager tool discovery, server info caching). Load testing requires the opposite: lightweight per-session clients that defer discovery and never cache globally.
+### Engine (`packages/engine`)
 
-### Load Engine (`src/engine/load-engine.ts`)
+The orchestrator that runs load tests from start to finish.
 
-The orchestrator that runs load tests:
+#### LoadEngine
 
-1. Parses configuration and validates options
-2. Creates session pool based on target concurrency
-3. Executes load profile (ramp/soak/spike/custom)
-4. Collects metrics in real-time
-5. Detects breaking point if auto-detection enabled
-6. Generates report in requested format
+```typescript
+class LoadEngine {
+  constructor(options: LoadEngineOptions);
+  run(): Promise<LoadTestReport>;
+}
+```
+
+**Execution flow:**
+1. Generate test UUID, record start time, start `MetricsCollector` and `SessionManager`
+2. Execute load profile generator — yields `{ concurrency, phase }` tuples at ~1-second intervals
+3. On each tick: adjust session pool, update session status per phase, check breaking point
+4. Stop metrics and sessions, build `LoadTestReport`, compute grade and recommendations
 
 ```typescript
 interface LoadEngineOptions {
@@ -111,201 +172,247 @@ interface LoadEngineOptions {
   auth?: AuthOptions;
   profile: LoadProfile;
   patterns: ToolCallPattern[];
-  maxConcurrency: number;
-  duration: number;
-  warmupDurationMs?: number;       // Metrics discarded during warmup
-  thinkTimeMs?: number;            // Default think time between pattern steps
   breakingPointDetection: boolean;
-  backpressure?: BackpressureOptions;
   outputFormat: 'console' | 'markdown' | 'json';
-}
-
-interface BackpressureOptions {
-  enabled: boolean;
-  maxRetries: number;
-  baseDelayMs: number;
-  multiplier: number;
-  treatAsBreakingPoint: boolean;   // Whether 429/503 signals breaking point
 }
 ```
 
-### Session Manager (`src/engine/session-manager.ts`)
+#### SessionManager
 
 Manages concurrent MCP sessions with multi-turn state:
 
-- **Session Lifecycle** — Create, use, cleanup
-- **State Tracking** — Per-session context for multi-turn workflows
-- **Connection Pooling** — Reuse connections where appropriate
-- **Transport-Aware** — Different pooling strategies per transport
+```typescript
+class SessionManager {
+  constructor(options: SessionManagerOptions);
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  createPool(targetConcurrency: number): Promise<void>;
+  getActiveSessions(): SessionState[];
+  getSessionCount(): number;
+  setSessionStatus(status: SessionState['status']): void;
+}
+```
+
+- **Session Lifecycle** — Create (`Promise.allSettled`), loop (weighted-random patterns), destroy (`AbortController` + `disconnect()`)
+- **Pool scaling** — `createPool(target)` computes the difference and adds/removes sessions; individual creation failures don't abort pool expansion
+- **Weighted-random selection** — Each session loop picks patterns proportionally by `weight`
+- **Abort safety** — Sessions check `AbortSignal` between pattern executions
 
 ```typescript
 interface SessionState {
   id: string;
   client: MCPClient;
-  context: Record<string, unknown>; // Multi-turn state passed between pattern steps
-  currentPatternIndex: number;      // Which pattern is being executed
-  currentStepIndex: number;         // Which step within the pattern
+  context: Record<string, unknown>;
+  status: 'warming_up' | 'active' | 'cooling_down' | 'error' | 'completed';
   createdAt: number;
   lastActiveAt: number;
   requestCount: number;
   errorCount: number;
-  status: 'warming_up' | 'active' | 'cooling_down' | 'error' | 'completed';
 }
 ```
 
-### Load Profiles (`src/profiles/`)
+### Patterns (`packages/patterns`)
 
-#### Ramp Profile
-Gradually increases concurrency from min to max, with optional ramp-down:
+Realistic tool-call sequences with a pattern execution engine.
+
+#### PatternExecutor
+
 ```typescript
-interface RampProfile {
-  type: 'ramp';
-  minConcurrency: number;      // Starting concurrency
-  maxConcurrency: number;      // Peak concurrency
-  rampDurationMs: number;      // Time to reach max
-  holdDurationMs: number;      // Time at max before ending
-  rampDownDurationMs?: number; // Time to return to min (for recovery analysis)
-  warmupDurationMs?: number;   // Metrics discarded during initial ramp
+class PatternExecutor {
+  constructor(client: MCPClient, metrics: MetricsCollector, sessionState: SessionState);
+  execute(pattern: ToolCallPattern): Promise<void>;
 }
 ```
 
-#### Soak Profile
-Sustained load over extended period to detect memory leaks and degradation:
-```typescript
-interface SoakProfile {
-  type: 'soak';
-  concurrency: number;       // Constant concurrency
-  durationMs: number;        // Total test duration
-  warmupDurationMs?: number; // Metrics discarded during initial period
-  sampleIntervalMs: number;  // Metrics sampling interval
-}
-```
-
-#### Spike Profile
-Sudden burst of concurrent requests to test resilience:
-```typescript
-interface SpikeProfile {
-  type: 'spike';
-  baselineConcurrency: number;  // Normal load
-  spikeConcurrency: number;     // Burst load
-  spikeDurationMs: number;      // How long the spike lasts
-  spikeCount: number;           // Number of spikes
-  cooldownMs: number;           // Time between spikes
-}
-```
-
-### Tool Call Patterns (`src/patterns/`)
-
-Realistic sequences of tool calls that mimic user behavior:
+Each step: resolves template variables → dispatches via transport → records to `MetricsCollector` → applies `onStepError` policy.
 
 #### Built-in Patterns
 
-1. **Explore-Then-Act**
-   ```
-   1. tools/list
-   2. Pick random tool
-   3. tools/call with generated args
-   ```
+| Pattern | Steps | Think Time | On Error |
+|---------|-------|------------|----------|
+| `EXPLORE_THEN_ACT` | `tools/list` → `tools/call` (random tool) | 100ms | continue |
+| `READ_THEN_WRITE` | `resources/read` → `tools/call` → `resources/read` ({{previous.uri}}) | 200ms | abort |
+| `MULTI_STEP_WORKFLOW` | `tools/call create` → `process` → `cleanup` ({{previous.id}}) | 150ms | abort |
 
-2. **Read-Then-Write**
-   ```
-   1. resources/read (get current state)
-   2. tools/call (modify state)
-   3. resources/read (verify change)
-   ```
+#### Template Variables
 
-3. **Multi-Step Workflow**
-   ```
-   1. tools/call step1 (create entity)
-   2. tools/call step2 (using step1 result)
-   3. tools/call step3 (cleanup)
-   ```
+| Variable | Resolves To |
+|----------|------------|
+| `{{random.string}}` | Random 6-char alphanumeric |
+| `{{random.tool}}` | Random tool from `resolvePattern` |
+| `{{previous}}` | Full result of previous step |
+| `{{previous.field}}` | Nested field via dot-notation |
 
-#### Custom Pattern Definition
+### Profiles (`packages/profiles`)
 
-```yaml
-patterns:
-  - name: "search-and-process"
-    weight: 0.5                    # Relative selection weight
-    thinkTimeMs: 100               # Delay between steps
-    onStepError: "continue"        # 'abort' | 'continue'
-    steps:
-      - tool: "search"
-        args: { query: "{{random.string}}" }
-      - tool: "process"
-        args: { results: "{{previous.results}}" }
-```
+Async generators yielding `{ concurrency: number, phase: string }` tuples at ~1-second intervals.
 
-### Metrics Collection (`src/metrics/`)
+- **`rampProfileGenerator(profile)`** — `warmup` → `ramp_up` (linear interpolation) → `hold` → `ramp_down`
+- **`soakProfileGenerator(profile)`** — `warmup` → `active` (constant) → `cooldown`
+- **`spikeProfileGenerator(profile)`** — N cycles of `baseline` → `spike`, then final `cooldown`
+- **`customProfileGenerator(profile)`** — `warmup` → `active` (linear interpolation from `concurrencyCurve`)
 
-#### Latency Histogram (`src/metrics/histogram.ts`)
+### Metrics (`packages/metrics`)
 
-Per-tool latency tracking with configurable buckets:
+#### LatencyHistogram
+
+Per-tool latency tracking with configurable buckets (default: 1ms through 50,000ms).
 
 ```typescript
 class LatencyHistogram {
-  private buckets: number[];      // Bucket boundaries
-  private counts: number[];       // Count per bucket
-  private samples: number[];      // Raw samples for percentile calc
-  
+  constructor(buckets?: number[]);
   record(latencyMs: number): void;
-  getPercentile(p: number): number;
-  getStats(): LatencyStats;       // p50, p90, p99, min, max, mean
+  getStats(): LatencyMetrics;  // p50, p90, p95, p99, min, max, mean, samples
+  merge(other: LatencyHistogram): void;
+  clone(): LatencyHistogram;
 }
 ```
 
-#### Error Tracker (`src/metrics/collector.ts`)
+#### MetricsCollector
 
-Categorizes and tracks errors:
+Records individual `RequestRecord` objects and produces aggregate reports:
+
+```typescript
+class MetricsCollector {
+  constructor(maxBufferSize?: number);  // default 100_000
+
+  start(): void;
+  stop(): void;
+  record(request: RequestRecord): void;
+
+  getToolHistograms(): Map<string, LatencyHistogram>;
+  getErrorSummary(): ErrorSummary;
+  getThroughput(): ThroughputMetrics;
+  getOverallLatencyP99(): number;
+  getWindowedErrorRate(windowMs: number): { errorRate: number; samples: number };
+  getActiveSessionCountOverTime(): Array<{ timestamp: number; count: number }>;
+}
+```
+
+**Error categories:**
 
 | Category | Description |
 |----------|-------------|
 | TIMEOUT | Request exceeded timeout |
 | CONNECTION | Network/connection failures |
 | PROTOCOL | Invalid MCP protocol responses |
-| SERVER | Server-returned errors |
+| SERVER | Server-returned errors (5xx) |
 | CLIENT | Client-side errors |
+| BACKPRESSURE | 429/503 throttling signals |
 
-#### Throughput Metrics
+### Analysis (`packages/analysis`)
 
-- **Requests Per Second (RPS)** — Rolling window average
-- **Success Rate** — Successful vs total requests
-- **Active Sessions** — Current concurrent session count
-- **Queue Depth** — Pending requests waiting for execution
+Merges breaking point detection and performance grading.
 
-### Breaking Point Detection (`src/breaking-point/`)
-
-#### Threshold Monitors
-
-Continuously monitors for degradation:
+#### BreakingPointDetector
 
 ```typescript
-interface BreakingThresholds {
-  errorRate: number;        // e.g., 0.05 = 5% error rate
-  latencyP99: number;       // e.g., 10000 = 10s p99
-  timeoutRate: number;      // e.g., 0.10 = 10% timeouts
-  connectionFailures: number; // Absolute count threshold
+class BreakingPointDetector {
+  constructor(thresholds?: Partial<BreakingThresholds>);
+  check(concurrency: number, metrics: MetricsCollector): boolean;
+  getResult(): BreakingPointResult;
+  reset(): void;
 }
 ```
 
-#### Auto-Scaling Search
+Monitors four thresholds continuously during test execution:
+- **Error rate** (default: 5%)
+- **P99 latency** (default: 10,000ms)
+- **Timeout rate** (default: 10%)
+- **Connection failure count** (default: 10)
 
-Binary search for max sustainable load:
+Once broken, tracks recovery via a 5-second rolling window with a minimum of 10 samples.
 
-1. Start at low concurrency
-2. Double until errors appear
-3. Binary search between last-good and first-bad
-4. Verify with sustained load at found limit
+#### Grader
 
-#### Recovery Analysis
+```typescript
+class Grader {
+  grade(report: LoadTestReport, context?: GradeContext): Grade;
+  generateRecommendations(report: LoadTestReport): string[];
+}
+```
 
-After breaking point detection:
-1. Reduce load to 50% of breaking point
-2. Monitor recovery time
-3. Check if error rate returns to baseline
-4. Report recovery characteristics
+Assigns A–F grades across latency, concurrency, and error rate dimensions (worst dimension determines overall grade). Supports per-tool-category benchmarks (compute, search, io).
 
-### Transport Concurrency Profiles
+### Reporters (`packages/reporters`)
+
+Three output formatters sharing the same `format(report: LoadTestReport): string` shape:
+
+- **`ConsoleReporter`** — ANSI-colored tables with grade color coding (green/yellow/red), breaking point warnings, per-tool latency tables, and recommendations
+- **`MarkdownReporter`** — GitHub-flavored markdown with summary, latency/throughput/error tables, breaking point analysis, and numbered recommendations
+- **`JsonReporter`** — `JSON.stringify(report, null, 2)` for CI/CD consumption
+
+### CLI (`packages/cli`)
+
+Built on Commander.js. Provides `mcp-load-test` and `mcp-lt` binaries.
+
+| Command | Description | Default Profile |
+|---------|-------------|-----------------|
+| `load` | Full-featured load test with all options | ramp |
+| `ramp` | Quick ramp test with minimal flags | ramp |
+| `soak` | Extended soak test (default 30 min) | soak |
+| `spike` | Spike/burst load test | spike |
+| `compare` | Compare two JSON reports against a baseline | n/a |
+
+The CLI also supports YAML/JSON config files via `--config`, which are merged with CLI flags (flags take precedence).
+
+## Data Flow
+
+### Test Execution Flow
+
+```
+1. CLI parses arguments / config → LoadEngineOptions
+2. Validate configuration
+3. LoadEngine.run()
+   ├── MetricsCollector.start()
+   ├── SessionManager.start()
+   ├── Execute profile (async generator)
+   │   ├── Warmup phase: sessions active, metrics typically discarded
+   │   ├── Active phase: sessions run weighted-random patterns (closed-loop)
+   │   │   ├── Each session independently loops: pick pattern → execute steps
+   │   │   ├── PatternExecutor records latency/success/errors to MetricsCollector
+   │   │   ├── SessionState tracks context for multi-step variable resolution
+   │   │   └── AbortController checked between pattern executions
+   │   ├── BreakingPointDetector.check() on each tick (if enabled)
+   │   └── SessionManager.createPool() adjusts concurrency per profile
+   ├── SessionManager.stop() → destroy all sessions
+   ├── MetricsCollector.stop()
+   └── Build LoadTestReport → grade → recommendations
+4. Reporter.format(report) → output
+5. Exit code 0 (grade A/B/C) or 1 (grade D/F or error)
+```
+
+### Metrics Collection Flow (per request)
+
+```
+1. Session picks tool from pattern
+2. PatternExecutor.measureTimeAsync() wraps the transport call
+3. On success → MetricsCollector.record({ success: true, latencyMs })
+4. On error → categorizeError() → MetricsCollector.record({ success: false, errorCategory })
+5. LatencyHistogram.record() updates bucket counts and samples
+6. MetricsCollector maintains bounded circular buffers (100K ceiling)
+```
+
+### Concurrency Model
+
+**Closed-loop concurrency**: The framework maintains a fixed pool of long-lived sessions. Each session continuously executes patterns until the test ends. This models realistic MCP usage where a user (session) makes multiple tool calls over time, rather than a flood of independent requests.
+
+- **Not open-loop**: We do not model "X new sessions per second." Instead, we model "X concurrent sessions, each doing work."
+- **Think time**: Delays between pattern steps simulate realistic user pauses and prevent unrealistic request flooding.
+- **Session lifetime**: A session starts at test start (or when concurrency increases) and ends at test end (or when concurrency decreases). Errors within a pattern step may abort the pattern but typically do not kill the session.
+
+## Error Handling
+
+| Error Type | Detection | Recovery |
+|------------|-----------|----------|
+| Connection refused | ECONNREFUSED | Retry with backoff, fail after max retries |
+| Timeout | Request exceeds timeout | Record as timeout error, continue |
+| Session expired | mcp-session-id invalid | Re-establish session, retry request |
+| Server overload | 429/503 responses | Record as BACKPRESSURE; may trigger breaking point |
+| Protocol error | Invalid JSON-RPC | Record protocol error, continue |
+| Transport failure | Stream closed unexpectedly | Reconnect transport, recreate session |
+
+## Transport Concurrency Profiles
 
 Each transport has different concurrency characteristics:
 
@@ -324,197 +431,17 @@ interface TransportConcurrencyProfile {
 }
 ```
 
-### Grading System (`src/grading/`)
-
-Load test specific benchmarks:
-
-```typescript
-// Default latency benchmarks (p99 in ms) — override per-tool-category in config
-const DEFAULT_LATENCY_BENCHMARKS = {
-  A: { p99: 500 },
-  B: { p99: 1000 },
-  C: { p99: 2000 },
-  D: { p99: 5000 },
-};
-
-// Per-tool-category overrides (e.g., search tools are naturally slower)
-const TOOL_CATEGORY_BENCHMARKS: Record<string, LatencyBenchmarks> = {
-  compute: { A: { p99: 100 }, B: { p99: 250 }, C: { p99: 500 }, D: { p99: 1000 } },
-  search:  { A: { p99: 1000 }, B: { p99: 2000 }, C: { p99: 5000 }, D: { p99: 10000 } },
-  io:      { A: { p99: 250 }, B: { p99: 500 }, C: { p99: 1000 }, D: { p99: 2500 } },
-};
-
-// Concurrency benchmarks (max sustainable)
-const CONCURRENCY_BENCHMARKS = {
-  A: 100,
-  B: 50,
-  C: 25,
-  D: 10,
-};
-
-// Error rate benchmarks
-const ERROR_RATE_BENCHMARKS = {
-  A: 0,
-  B: 0.01,
-  C: 0.05,
-  D: 0.10,
-};
-```
-
-### Reporter System (`src/reporters/`)
-
-#### Markdown Reporter (PR-Ready)
-
-Generates a report suitable for GitHub PR comments:
-
-```markdown
-# Load Test Report
-
-## Summary
-- **Grade:** B 🟢
-- **Breaking Point:** 47 concurrent sessions
-- **Duration:** 5m 23s
-- **Total Requests:** 14,237
-
-## Latency (p99)
-| Tool | p50 | p90 | p99 | Samples |
-|------|-----|-----|-----|---------|
-| search | 45ms | 120ms | 340ms | 4,521 |
-| process | 89ms | 230ms | 520ms | 3,214 |
-
-## Breaking Point Analysis
-Server began degrading at 47 concurrent sessions:
-- Error rate increased from 0.1% to 8.3%
-- p99 latency increased from 340ms to 2.1s
-- Recovery time: 45s after load reduction
-
-## Recommendations
-1. Add connection pooling to handle higher concurrency
-2. Implement request queuing for spike protection
-```
-
-#### JSON Reporter
-
-Machine-readable format for CI/CD:
-
-```typescript
-interface LoadTestReport {
-  id: string;
-  endpoint: string;
-  startedAt: string;
-  completedAt: string;
-  durationMs: number;
-  grade: Grade;
-  breakingPoint: BreakingPointResult | null;
-  toolLatencies: ToolLatencyMetrics[];
-  errorSummary: ErrorSummary;
-  throughput: ThroughputMetrics;
-  recommendations: string[];
-  baselineComparison?: BaselineComparison;
-}
-
-interface BaselineComparison {
-  baselineId: string;
-  baselineDate: string;
-  gradeChange: 'improved' | 'regressed' | 'unchanged';
-  latencyChangePercent: number;    // Overall p99 change
-  breakingPointChangePercent: number;
-  errorRateChangePercent: number;
-  toolLatencyChanges: Array<{
-    toolName: string;
-    p99ChangePercent: number;
-    gradeChange: 'improved' | 'regressed' | 'unchanged';
-  }>;
-}
-```
-
-#### Console Reporter
-
-Real-time progress display with live metrics:
-
-```
-[████████████████░░░░] 75% | 45/60 sessions | 234 RPS | 0.2% errors
-  p50: 45ms  p90: 120ms  p99: 340ms
-```
-
-## Data Flow
-
-### Test Execution Flow
-
-```
-1. CLI parses arguments → LoadTestOptions
-2. Validate configuration and target endpoint
-3. LoadEngine.start()
-   ├── SessionManager.createPool(maxConcurrency)
-   ├── ProfileExecutor.run(profile)
-   │   ├── Warmup phase: sessions active, metrics discarded
-   │   ├── Active phase: all sessions run patterns concurrently (closed-loop)
-   │   │   ├── Each session independently loops through weighted patterns
-   │   │   ├── PatternExecutor.execute(pattern) with thinkTime between steps
-   │   │   ├── MetricsCollector.record(latency, success)
-   │   │   ├── BreakingPointDetector.check()
-   │   │   └── BackpressureHandler.handle(response)
-   │   └── Adjust concurrency per profile (ramp up / spike / hold)
-   ├── Cooldown phase: ramp down, observe recovery
-   ├── SessionManager.cleanup()
-   └── Return LoadTestReport
-4. Reporter.format(report) → output
-5. Exit with appropriate code
-```
-
-### Metrics Collection Flow (per request)
-
-```
-1. Session picks tool from pattern
-2. Start timer
-3. Execute tools/call via transport
-4. Stop timer → record latency
-5. On success: increment success counter
-6. On error: categorize error, increment error counter
-7. Update rolling RPS calculation
-8. Check breaking point thresholds
-9. If broken: signal profile executor to adjust
-```
-
-### Concurrency Model
-
-**Closed-loop concurrency**: The framework maintains a fixed pool of long-lived sessions. Each session continuously executes patterns until the test ends. This models realistic MCP usage where a user (session) makes multiple tool calls over time, rather than a flood of independent requests.
-
-- **Not open-loop**: We do not model "X new sessions per second." Instead, we model "X concurrent sessions, each doing work."
-- **Think time**: Delays between pattern steps simulate realistic user pauses and prevent unrealistic request flooding.
-- **Session lifetime**: A session starts at test start (or when concurrency increases) and ends at test end (or when concurrency decreases). Errors within a pattern step may abort the pattern but typically do not kill the session.
-
-## Error Handling
-
-| Error Type | Detection | Recovery |
-|------------|-----------|----------|
-| Connection refused | ECONNREFUSED | Retry with backoff, fail after max retries |
-| Timeout | Request exceeds timeout | Record as timeout error, continue |
-| Session expired | mcp-session-id invalid | Re-establish session, retry request |
-| Server overload | 503/429 responses | Apply backoff if backpressure enabled; may trigger breaking point |
-| Protocol error | Invalid JSON-RPC | Record protocol error, continue |
-| Transport failure | Stream closed unexpectedly | Reconnect transport, recreate session |
-
 ## Observability
 
 ### Structured Logging (Pino)
 
-All significant events logged with structured fields:
+Pre-configured logger from `@reaatech/mcp-load-test-core`. Level controlled by `LOG_LEVEL` env (default `"info"`). Pretty-printed output enabled via `MCP_LT_PRETTY_LOGS=1` (set automatically by the CLI).
+
+Significant events logged with structured fields:
 - `sessionId`, `toolName`, `concurrency` — Request context
-- `latencyMs`, `success`, `errorType` — Request result
-- `profile`, `currentConcurrency`, `targetConcurrency` — Profile state
-- `breakingPointDetected`, `errorRate`, `threshold` — Breaking point
-
-### Metrics (OpenTelemetry)
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| `loadtest_requests_total` | Counter | Total requests, by tool and status |
-| `loadtest_request_duration_ms` | Histogram | Request latency distribution |
-| `loadtest_active_sessions` | Gauge | Current active session count |
-| `loadtest_error_total` | Counter | Errors by category |
-| `loadtest_rps` | Gauge | Current requests per second |
-| `loadtest_breaking_point` | Gauge | Detected breaking point concurrency |
+- `latencyMs`, `success`, `errorCategory` — Request result
+- `phase`, `endpoint`, `transport` — Profile state
+- `breakingPointDetected`, `errorRate` — Breaking point
 
 ## Configuration
 
@@ -524,24 +451,25 @@ All significant events logged with structured fields:
 |------|-------------|---------|
 | `--endpoint` | MCP server endpoint (URL or command) | (required) |
 | `--transport` | `stdio`, `sse`, `http`, `auto` | `auto` |
-| `--profile` | `ramp`, `soak`, `spike`, `custom` | `ramp` |
+| `--profile` | `ramp`, `soak`, `spike` | `ramp` |
 | `--max-concurrency` | Maximum concurrent sessions | `50` |
 | `--duration` | Test duration in seconds | `60` |
 | `--patterns` | Comma-separated pattern names | `explore-then-act` |
-| `--breaking-point` | Enable auto breaking point detection | `false` |
+| `--breaking-point` | Enable breaking point detection | `false` |
 | `--format` | `console`, `markdown`, `json` | `console` |
 | `--output` | Output file path | stdout |
 | `--timeout` | Request timeout in ms | `30000` |
+| `--config` | YAML or JSON config file path | — |
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `NODE_ENV` | `production` or `development` | `development` |
-| `LOG_LEVEL` | Pino log level | `info` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for metrics | (disabled) |
-| `MCP_API_KEY` | API key for auth | (none) |
-| `MCP_BEARER_TOKEN` | Bearer token for auth | (none) |
+| `LOG_LEVEL` | Pino log level (`trace`, `debug`, `info`, `warn`, `error`) | `info` |
+| `MCP_LT_PRETTY_LOGS` | Enable colored pretty-printed log output | `"1"` in CLI mode |
+| `MCP_API_KEY` | API key for auth | — |
+| `MCP_BEARER_TOKEN` | Bearer token for auth | — |
 
 ### Configuration File (YAML)
 
@@ -556,7 +484,7 @@ profile:
   minConcurrency: 1
   maxConcurrency: 100
   rampDurationMs: 300000  # 5 minutes
-  holdDurationMs: 120000 # 2 minutes
+  holdDurationMs: 120000  # 2 minutes
 
 patterns:
   - name: "explore-then-act"
@@ -575,13 +503,25 @@ output:
   file: "./load-test-report.md"
 ```
 
+## Toolchain
+
+| Concern | Tool |
+|---------|------|
+| Package manager | pnpm 10.22.0 |
+| Build | tsup (CJS + ESM + dts per package) |
+| Task orchestration | Turbo |
+| Lint + format | Biome |
+| Versioning | Changesets |
+| Testing | Vitest |
+| TypeScript | 6.0 (strict mode, NodeNext module resolution) |
+
 ## Comparison with mcp-server-doctor
 
 | Aspect | mcp-server-doctor | mcp-load-test |
 |--------|-------------------|---------------|
 | Purpose | Diagnostics & grading | Stress testing & breaking point |
 | Duration | Seconds | Minutes to hours |
-| Concurrency | Low (1-10) | High (1-100+) |
+| Concurrency | Low (1–10) | High (1–100+) |
 | Focus | Compliance, correctness | Performance, limits |
 | Output | Report card grade | Breaking point analysis |
 | Use Case | Pre-deployment check | Capacity planning |

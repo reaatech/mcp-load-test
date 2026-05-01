@@ -13,11 +13,11 @@ Analyze, categorize, and prioritize bug reports and anomalies in mcp-load-test a
 - When user shares bug reports, crash logs, or anomalous load test results
 
 ## Capabilities
-- **Bug Classification**: Categorize issues by component (transport, engine, metrics, patterns, reporters)
+- **Bug Classification**: Categorize issues by package (core, client, engine, metrics, patterns, profiles, analysis, reporters, cli)
 - **Severity Assessment**: Evaluate impact on load test accuracy and reliability
-- **Transport Failure Analysis**: Diagnose SSE disconnects, HTTP session expiry, and stdio process crashes
-- **Breaking Point Anomaly Detection**: Identify suspicious breaking point shifts between runs
-- **Metric Regression Analysis**: Detect when latency histograms, error rates, or throughput degrade unexpectedly
+- **Transport Failure Analysis**: Diagnose SSE disconnects, HTTP session expiry, and stdio process crashes in `@reaatech/mcp-load-test-client`
+- **Breaking Point Anomaly Detection**: Identify suspicious breaking point shifts between runs in `@reaatech/mcp-load-test-analysis`
+- **Metric Regression Analysis**: Detect when latency histograms, error rates, or throughput degrade unexpectedly in `@reaatech/mcp-load-test-metrics`
 - **Root Cause Analysis**: Trace symptoms back to session management, transport limits, or server behavior
 - **Duplicate Detection**: Identify if a transport issue affects multiple profiles or patterns
 
