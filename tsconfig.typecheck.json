@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@reaatech/mcp-load-test-core": ["./packages/core/src/index.ts"],
+      "@reaatech/mcp-load-test-metrics": ["./packages/metrics/src/index.ts"],
+      "@reaatech/mcp-load-test-patterns": ["./packages/patterns/src/index.ts"],
+      "@reaatech/mcp-load-test-profiles": ["./packages/profiles/src/index.ts"],
+      "@reaatech/mcp-load-test-analysis": ["./packages/analysis/src/index.ts"],
+      "@reaatech/mcp-load-test-client": ["./packages/client/src/index.ts"],
+      "@reaatech/mcp-load-test-reporters": ["./packages/reporters/src/index.ts"],
+      "@reaatech/mcp-load-test-engine": ["./packages/engine/src/index.ts"],
+      "@reaatech/mcp-load-test-cli": ["./packages/cli/src/index.ts"]
+    }
+  }
+}

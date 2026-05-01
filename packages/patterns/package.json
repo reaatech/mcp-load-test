@@ -1,0 +1,46 @@
+{
+  "name": "@reaatech/mcp-load-test-patterns",
+  "version": "0.1.0",
+  "description": "Tool call pattern definitions and execution engine for MCP load testing",
+  "license": "MIT",
+  "author": "Rick Somers <rick@reaatech.com> (https://reaatech.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reaatech/mcp-load-test.git",
+    "directory": "packages/patterns"
+  },
+  "homepage": "https://github.com/reaatech/mcp-load-test/tree/main/packages/patterns#readme",
+  "bugs": {
+    "url": "https://github.com/reaatech/mcp-load-test/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reaatech/mcp-load-test-core": "workspace:*",
+    "@reaatech/mcp-load-test-metrics": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}

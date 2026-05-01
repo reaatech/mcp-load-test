@@ -13,13 +13,13 @@ Analyze load test performance metrics, identify bottlenecks, and provide optimiz
 - When user shares load test reports, histogram data, or metrics
 
 ## Capabilities
-- **Latency Histogram Analysis**: Interpret P50/P90/P95/P99 distributions, identify skew, outliers, and bucket boundary issues
-- **Breaking Point Analysis**: Determine exact concurrency where degradation begins and analyze pre/post-break metrics
-- **Transport Profile Review**: Compare HTTP vs SSE vs stdio concurrency limits and connection behavior
-- **Throughput Analysis**: Evaluate RPS trends, queue depth, and session utilization
+- **Latency Histogram Analysis**: Interpret P50/P90/P95/P99 distributions from `@reaatech/mcp-load-test-metrics`, identify skew, outliers, and bucket boundary issues
+- **Breaking Point Analysis**: Determine exact concurrency where degradation begins using `@reaatech/mcp-load-test-analysis` and analyze pre/post-break metrics
+- **Transport Profile Review**: Compare HTTP vs SSE vs stdio concurrency limits and connection behavior in `@reaatech/mcp-load-test-client`
+- **Throughput Analysis**: Evaluate RPS trends, peak concurrency, and session utilization via `MetricsCollector.getThroughput()`
 - **Bottleneck Identification**: Distinguish between server-side, transport-level, and pattern-driven bottlenecks
-- **Baseline Comparison**: Compare current run against historical baselines for regression detection
-- **Optimization Recommendations**: Suggest server-side improvements (pooling, caching, async handling)
+- **Baseline Comparison**: Compare current run against historical baselines for regression detection using `mcp-load-test compare`
+- **Optimization Recommendations**: Suggest server-side improvements (pooling, caching, async handling) based on `Grader.generateRecommendations()` output
 
 ## Constraints
 - Cannot directly profile or measure runtime performance of the target MCP server

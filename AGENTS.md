@@ -4,7 +4,7 @@ This document describes the AI agent skills system for the mcp-load-test project
 
 ## Project Context
 
-**mcp-load-test** is a load testing framework purpose-built for MCP (Model Context Protocol) servers. Unlike generic HTTP load generators, it understands:
+**mcp-load-test** is a pnpm monorepo load testing framework purpose-built for MCP (Model Context Protocol) servers. Unlike generic HTTP load generators, it understands:
 
 - **Tool call patterns** — Realistic sequences (explore-then-act, read-then-write, multi-step workflows)
 - **Concurrent sessions** — Closed-loop concurrency with multi-turn state per session
@@ -14,6 +14,32 @@ This document describes the AI agent skills system for the mcp-load-test project
 - **PR-ready reports** — Markdown output formatted for GitHub pull requests
 
 This project pairs with [mcp-server-doctor](https://github.com/reaatech/mcp-server-doctor) (doctor diagnoses, load-test stresses).
+
+### Package Map
+
+| Package | Path | Scope |
+|---------|------|-------|
+| core | `packages/core` | Types, schemas, utilities, logger |
+| metrics | `packages/metrics` | Latency histograms, error tracking |
+| patterns | `packages/patterns` | Tool call patterns, executor |
+| profiles | `packages/profiles` | Concurrency profile generators |
+| analysis | `packages/analysis` | Breaking point detection, grading |
+| client | `packages/client` | MCP transports (stdio, SSE, HTTP) |
+| reporters | `packages/reporters` | Console, markdown, JSON output |
+| engine | `packages/engine` | Orchestrator, session manager |
+| cli | `packages/cli` | Commander CLI, binary entry |
+
+### Toolchain
+
+| Concern | Tool |
+|---------|------|
+| Package manager | pnpm 10.22.0 |
+| Build | tsup (CJS + ESM + dts per package) |
+| Task orchestration | Turbo |
+| Lint + format | Biome |
+| Versioning | Changesets |
+| Testing | Vitest |
+| TypeScript | 6.0 (strict, NodeNext) |
 
 ## Available Skills
 
@@ -33,26 +59,29 @@ Skills can be invoked through MCP tools or directly referenced in conversations.
 ### Example Usage
 
 ```
-# Request code review with load-test context
+# Code review with load-test context
 Please review the session-manager.ts changes for concurrency safety
 
 # Generate tests for transport layer
-Generate tests for the SSE transport reconnection logic
+Generate tests for the SSE transport reconnection logic in @reaatech/mcp-load-test-client
 
 # Performance analysis
 Analyze why the p99 latency spikes at 47 concurrent sessions
 
 # Documentation
 Update the markdown reporter to include recovery analysis
+
+# Bug triage
+Triage this SSE transport disconnect that only happens during spike tests
 ```
 
 ## Skill Coordination
 
-Multiple skills can work together for complex tasks. Examples specific to this project:
+Multiple skills can work together for complex tasks:
 
 - `performance-analysis` + `refactoring` → Identify histogram bucket sizing issues and suggest optimized bucket boundaries
-- `bug-triage` + `code-review` → A breaking point anomaly at 25 concurrent SSE sessions may indicate a transport-level bottleneck; review SSE transport for connection limits
-- `test-generation` + `code-review` → Generate integration tests for a new load profile, then review for edge cases in timing logic
+- `bug-triage` + `code-review` → A breaking point anomaly at 25 concurrent SSE sessions may indicate a transport-level bottleneck; review SSE transport in `@reaatech/mcp-load-test-client` for connection limits
+- `test-generation` + `code-review` → Generate integration tests for a new load profile in `@reaatech/mcp-load-test-profiles`, then review for edge cases in timing logic
 - `documentation` + `performance-analysis` → Generate a markdown report section explaining latency degradation patterns
 
 ## Adding New Skills
