@@ -1,0 +1,4 @@
+packages:
+  - packages/*
+
+allowBuildPackages: '@biomejs/biome esbuild'

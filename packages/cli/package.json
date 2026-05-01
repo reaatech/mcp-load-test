@@ -1,0 +1,56 @@
+{
+  "name": "@reaatech/mcp-load-test-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for MCP load testing",
+  "license": "MIT",
+  "author": "Rick Somers <rick@reaatech.com> (https://reaatech.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reaatech/mcp-load-test.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/reaatech/mcp-load-test/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/reaatech/mcp-load-test/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mcp-load-test": "./dist/cli.js",
+    "mcp-lt": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format cjs,esm --dts --clean",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reaatech/mcp-load-test-core": "workspace:*",
+    "@reaatech/mcp-load-test-engine": "workspace:*",
+    "@reaatech/mcp-load-test-reporters": "workspace:*",
+    "@reaatech/mcp-load-test-patterns": "workspace:*",
+    "commander": "^14.0.3",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.0",
+    "tsup": "^8.4.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
