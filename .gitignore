@@ -12,3 +12,4 @@ coverage/
 .env.local
 .claude
 .turbo/
+DEV_PLAN.md
