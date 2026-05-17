@@ -1,11 +1,11 @@
 import {
-  TOOL_CATEGORY_BENCHMARKS,
+  Grader,
   gradeConcurrency,
   gradeErrorRate,
   gradeLatency,
   overallGrade,
+  TOOL_CATEGORY_BENCHMARKS,
 } from '@reaatech/mcp-load-test-analysis';
-import { Grader } from '@reaatech/mcp-load-test-analysis';
 import type { LoadTestReport } from '@reaatech/mcp-load-test-core';
 import { describe, expect, it } from 'vitest';
 

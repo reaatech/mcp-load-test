@@ -1,6 +1,5 @@
-import { measureTimeAsync, sleep } from '@reaatech/mcp-load-test-core';
-import { logger } from '@reaatech/mcp-load-test-core';
 import type { MCPClient, SessionState, ToolCallPattern } from '@reaatech/mcp-load-test-core';
+import { logger, measureTimeAsync, sleep } from '@reaatech/mcp-load-test-core';
 import type { ErrorCategory, MetricsCollector } from '@reaatech/mcp-load-test-metrics';
 
 export class PatternExecutor {

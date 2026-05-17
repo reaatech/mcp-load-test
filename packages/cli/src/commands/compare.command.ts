@@ -1,7 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { writeFileSync } from 'node:fs';
-import type { LoadTestReport } from '@reaatech/mcp-load-test-core';
-import type { Grade } from '@reaatech/mcp-load-test-core';
+import { readFileSync, writeFileSync } from 'node:fs';
+import type { Grade, LoadTestReport } from '@reaatech/mcp-load-test-core';
 import { MarkdownReporter } from '@reaatech/mcp-load-test-reporters';
 import type { Command } from 'commander';
 

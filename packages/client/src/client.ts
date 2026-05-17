@@ -1,12 +1,10 @@
-import { isPrivateURL, isValidURL } from '@reaatech/mcp-load-test-core';
-import { getProgramVersion } from '@reaatech/mcp-load-test-core';
-import { logger } from '@reaatech/mcp-load-test-core';
 import type {
   AuthOptions,
   MCPClient,
   ToolDefinition,
   TransportType,
 } from '@reaatech/mcp-load-test-core';
+import { getProgramVersion, isPrivateURL, isValidURL, logger } from '@reaatech/mcp-load-test-core';
 import { SSETransport, StdioTransport, StreamableHTTPTransport } from './transports/index.js';
 
 const warnedPrivateEndpoints = new Set<string>();

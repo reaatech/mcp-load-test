@@ -1,13 +1,11 @@
-import { BreakingPointDetector } from '@reaatech/mcp-load-test-analysis';
-import { Grader } from '@reaatech/mcp-load-test-analysis';
-import { generateUUID, now } from '@reaatech/mcp-load-test-core';
-import { logger } from '@reaatech/mcp-load-test-core';
+import { BreakingPointDetector, Grader } from '@reaatech/mcp-load-test-analysis';
 import type {
   LoadEngineOptions,
   LoadProfile,
   LoadTestReport,
   ToolLatencyMetrics,
 } from '@reaatech/mcp-load-test-core';
+import { generateUUID, logger, now } from '@reaatech/mcp-load-test-core';
 import { MetricsCollector } from '@reaatech/mcp-load-test-metrics';
 import {
   customProfileGenerator,

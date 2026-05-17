@@ -1,5 +1,5 @@
-import { sleep } from '@reaatech/mcp-load-test-core';
 import type { CustomProfile } from '@reaatech/mcp-load-test-core';
+import { sleep } from '@reaatech/mcp-load-test-core';
 
 export async function* customProfileGenerator(
   profile: CustomProfile,

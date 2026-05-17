@@ -1,5 +1,5 @@
-import { sleep } from '@reaatech/mcp-load-test-core';
 import type { SpikeProfile } from '@reaatech/mcp-load-test-core';
+import { sleep } from '@reaatech/mcp-load-test-core';
 
 export async function* spikeProfileGenerator(
   profile: SpikeProfile,
