@@ -1,5 +1,5 @@
-import { calculateStats } from '@reaatech/mcp-load-test-core';
 import type { LatencyMetrics } from '@reaatech/mcp-load-test-core';
+import { calculateStats } from '@reaatech/mcp-load-test-core';
 
 const DEFAULT_BUCKETS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
 
@@ -7,7 +7,6 @@ export class LatencyHistogram {
   private buckets: number[];
   private counts: number[];
   private samples: number[] = [];
-  private totalSum = 0;
 
   constructor(buckets?: number[]) {
     this.buckets =
@@ -17,7 +16,6 @@ export class LatencyHistogram {
 
   record(latencyMs: number): void {
     this.samples.push(latencyMs);
-    this.totalSum += latencyMs;
 
     let bucketIndex = this.buckets.findIndex((b) => latencyMs <= b);
     if (bucketIndex === -1) {

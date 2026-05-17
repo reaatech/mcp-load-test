@@ -1,7 +1,9 @@
 import type { RampProfile, SoakProfile, SpikeProfile } from '@reaatech/mcp-load-test-core';
-import { rampProfileGenerator } from '@reaatech/mcp-load-test-profiles';
-import { soakProfileGenerator } from '@reaatech/mcp-load-test-profiles';
-import { spikeProfileGenerator } from '@reaatech/mcp-load-test-profiles';
+import {
+  rampProfileGenerator,
+  soakProfileGenerator,
+  spikeProfileGenerator,
+} from '@reaatech/mcp-load-test-profiles';
 import { describe, expect, it } from 'vitest';
 
 describe('profile generators', () => {

@@ -1,12 +1,11 @@
 import { createSessionClient } from '@reaatech/mcp-load-test-client';
-import { generateUUID } from '@reaatech/mcp-load-test-core';
-import { logger } from '@reaatech/mcp-load-test-core';
 import type {
   AuthOptions,
   SessionState,
   ToolCallPattern,
   TransportType,
 } from '@reaatech/mcp-load-test-core';
+import { generateUUID, logger } from '@reaatech/mcp-load-test-core';
 import type { MetricsCollector } from '@reaatech/mcp-load-test-metrics';
 import { PatternExecutor } from '@reaatech/mcp-load-test-patterns';
 

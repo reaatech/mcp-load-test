@@ -1,5 +1,5 @@
-import { percentile } from '@reaatech/mcp-load-test-core';
 import type { ErrorSummary, ThroughputMetrics } from '@reaatech/mcp-load-test-core';
+import { percentile } from '@reaatech/mcp-load-test-core';
 import { LatencyHistogram } from './histogram.js';
 
 export type ErrorCategory =

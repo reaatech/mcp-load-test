@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { Command } from 'commander';
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { registerLoadCommand } from '../src/commands/load.command.js';
 import { registerRampCommand } from '../src/commands/ramp.command.js';
 import { registerSoakCommand } from '../src/commands/soak.command.js';

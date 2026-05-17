@@ -1,5 +1,5 @@
-import { createServer } from 'node:http';
 import type { Server } from 'node:http';
+import { createServer } from 'node:http';
 
 export function createMockMCPServer(port = 0): Promise<{ server: Server; port: number }> {
   return new Promise((resolve) => {

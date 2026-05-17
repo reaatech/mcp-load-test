@@ -1,5 +1,5 @@
-import { sleep } from '@reaatech/mcp-load-test-core';
 import type { SoakProfile } from '@reaatech/mcp-load-test-core';
+import { sleep } from '@reaatech/mcp-load-test-core';
 
 export async function* soakProfileGenerator(
   profile: SoakProfile,

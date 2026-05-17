@@ -1,2 +1,2 @@
+export { type ErrorCategory, MetricsCollector, type RequestRecord } from './collector.js';
 export { LatencyHistogram } from './histogram.js';
-export { MetricsCollector, type ErrorCategory, type RequestRecord } from './collector.js';

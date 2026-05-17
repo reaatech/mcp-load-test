@@ -1,13 +1,13 @@
 import type { Grade, LoadTestReport, ToolLatencyMetrics } from '@reaatech/mcp-load-test-core';
+import type { LatencyBenchmarks } from './benchmarks.js';
 import {
   CONCURRENCY_BENCHMARKS,
-  TOOL_CATEGORY_BENCHMARKS,
   gradeConcurrency,
   gradeErrorRate,
   gradeLatency,
   overallGrade,
+  TOOL_CATEGORY_BENCHMARKS,
 } from './benchmarks.js';
-import type { LatencyBenchmarks } from './benchmarks.js';
 
 export interface GraderOptions {
   toolCategoryMap?: Record<string, string>;

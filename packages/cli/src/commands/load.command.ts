@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
-import { logger } from '@reaatech/mcp-load-test-core';
 import type { LoadEngineOptions, LoadProfile, ToolCallPattern } from '@reaatech/mcp-load-test-core';
+import { logger } from '@reaatech/mcp-load-test-core';
 import { LoadEngine } from '@reaatech/mcp-load-test-engine';
 import { BUILT_IN_PATTERNS } from '@reaatech/mcp-load-test-patterns';
 import { ConsoleReporter, JsonReporter, MarkdownReporter } from '@reaatech/mcp-load-test-reporters';
