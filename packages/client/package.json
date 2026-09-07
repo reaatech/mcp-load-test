@@ -38,12 +38,12 @@
   },
   "dependencies": {
     "@reaatech/mcp-load-test-core": "workspace:*",
-    "eventsource": "^4.1.0"
+    "eventsource": "^5.1.1"
   },
   "devDependencies": {
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.4.1",
     "tsup": "^8.4.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.0"
   }
 }
